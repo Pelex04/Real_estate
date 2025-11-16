@@ -8,6 +8,17 @@ interface NavbarProps {
 export default function Navbar({ onAdminClick }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // Function to close menu when a link is clicked
+  const handleLinkClick = () => {
+    setIsMenuOpen(false);
+  };
+
+  // Handle admin click - close menu and trigger admin action
+  const handleAdminClick = () => {
+    setIsMenuOpen(false);
+    onAdminClick();
+  };
+
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -41,12 +52,36 @@ export default function Navbar({ onAdminClick }: NavbarProps) {
 
         {isMenuOpen && (
           <div className="md:hidden pb-4 space-y-2">
-            <a href="#" className="block text-gray-700 hover:text-emerald-600 transition py-2">Home</a>
-            <a href="#properties" className="block text-gray-700 hover:text-emerald-600 transition py-2">Properties</a>
-            <a href="#about" className="block text-gray-700 hover:text-emerald-600 transition py-2">About</a>
-            <a href="#contact" className="block text-gray-700 hover:text-emerald-600 transition py-2">Contact</a>
+            <a 
+              href="#" 
+              className="block text-gray-700 hover:text-emerald-600 transition py-2"
+              onClick={handleLinkClick}
+            >
+              Home
+            </a>
+            <a 
+              href="#properties" 
+              className="block text-gray-700 hover:text-emerald-600 transition py-2"
+              onClick={handleLinkClick}
+            >
+              Properties
+            </a>
+            <a 
+              href="#about" 
+              className="block text-gray-700 hover:text-emerald-600 transition py-2"
+              onClick={handleLinkClick}
+            >
+              About
+            </a>
+            <a 
+              href="#contact" 
+              className="block text-gray-700 hover:text-emerald-600 transition py-2"
+              onClick={handleLinkClick}
+            >
+              Contact
+            </a>
             <button
-              onClick={onAdminClick}
+              onClick={handleAdminClick}
               className="w-full text-left bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition"
             >
               Admin
