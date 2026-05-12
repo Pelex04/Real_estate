@@ -67,10 +67,20 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
 
   // Initial load + auto-refresh every 30 seconds
   useEffect(() => {
-    loadData();
-    const interval = setInterval(() => loadData(true), 30000);
-    return () => clearInterval(interval);
-  }, [loadData]);
+    let cancelled = false;
+
+    const run = async () => {
+      if (!cancelled) await loadData();
+    };
+
+    run();
+    const interval = setInterval(() => { if (!cancelled) loadData(true); }, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handlePropertySaved = () => {
     setShowPropertyForm(false);
@@ -88,6 +98,12 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
   const handleInquiryStatusUpdate = async (id: string, status: string) => {
     const { error } = await supabase.from('contact_inquiries').update({ status }).eq('id', id);
     if (error) alert('Update failed: ' + error.message);
+    else loadData(true);
+  };
+
+  const handleDeleteInquiry = async (id: string) => {
+    const { error } = await supabase.from('contact_inquiries').delete().eq('id', id);
+    if (error) alert('Delete failed: ' + error.message);
     else loadData(true);
   };
 
@@ -217,6 +233,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                       inquiries={inquiries}
                       properties={properties}
                       onStatusUpdate={handleInquiryStatusUpdate}
+                      onDelete={handleDeleteInquiry}
                     />
                   </>
                 )}

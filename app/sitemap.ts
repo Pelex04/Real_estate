@@ -9,14 +9,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .eq('status', 'available');
 
   const propertyUrls: MetadataRoute.Sitemap = (properties ?? []).map((p) => ({
-    url: `https://primehomes.mw/properties/${p.id}`,
+    url: `https://primehomesmalawi.vercel.app/properties/${p.id}`,
     lastModified: new Date(p.updated_at),
     changeFrequency: 'weekly',
     priority: 0.8,
   }));
 
   return [
-    { url: 'https://primehomes.mw', lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
+    { url: 'https://primehomesmalawi.vercel.app', lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
     ...propertyUrls,
   ];
 }
