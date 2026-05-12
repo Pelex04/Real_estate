@@ -31,7 +31,7 @@ export default function Footer() {
             <p>&copy; {year} PrimeHomes Malawi. All rights reserved.</p>
 
             <Link
-              href="https://cheza-x-malawi.vercel.app"
+              href="https://cheza-x-malawi.vercel.app/about"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-400 transition group"

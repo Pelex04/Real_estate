@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     'Lilongwe property',
     'Blantyre property',
   ],
-  authors: [{ name: 'Rasta Kadema', url: 'https://cheza-x-malawi.vercel.app' }],
+  authors: [{ name: 'Rasta Kadema', url: 'https://cheza-x-malawi.vercel.app/about' }],
   creator: 'Rasta Kadema',
   publisher: 'Kadema',
   metadataBase: new URL('https://primehomesmalawi.vercel.app'),
