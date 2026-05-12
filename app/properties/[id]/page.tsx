@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: 'website',
-      url: `https://primehomes.mw/properties/${id}`,
+      url: `https://primehomesmalawi.vercel.app/properties/${id}`,
       images: primaryImage ? [{ url: primaryImage, width: 1200, height: 630, alt: property.title }] : [],
     },
     twitter: {
@@ -73,7 +73,7 @@ export default async function PropertyPage({ params }: Props) {
     '@type': 'RealEstateListing',
     name: property.title,
     description: property.description,
-    url: `https://primehomes.mw/properties/${id}`,
+    url: `https://primehomesmalawi.vercel.app/properties/${id}`,
     image: primaryImage,
     offers: {
       '@type': 'Offer',

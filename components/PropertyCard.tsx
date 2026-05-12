@@ -36,7 +36,7 @@ export default function PropertyCard({ property, images, onClick }: PropertyCard
   };
 
   const whatsappNumber = '+265888414728';
-  const whatsappMsg = encodeURIComponent(`Hi, I'm interested in: ${property.title} – https://primehomes.mw/properties/${property.id}`);
+  const whatsappMsg = encodeURIComponent(`Hi, I'm interested in: ${property.title} – https://primehomesmalawi.vercel.app/properties/${property.id}`);
   const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${whatsappMsg}`;
 
   return (

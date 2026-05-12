@@ -19,14 +19,14 @@ export const metadata: Metadata = {
     'Lilongwe property',
     'Blantyre property',
   ],
-  authors: [{ name: 'Rasta Kadema', url: 'https://rastakadema.com' }],
+  authors: [{ name: 'Rasta Kadema', url: 'https://cheza-x-malawi.vercel.app' }],
   creator: 'Rasta Kadema',
   publisher: 'Kadema',
-  metadataBase: new URL('https://primehomes.mw'),
+  metadataBase: new URL('https://primehomesmalawi.vercel.app'),
   openGraph: {
     type: 'website',
     locale: 'en_MW',
-    url: 'https://primehomes.mw',
+    url: 'https://primehomesmalawi.vercel.app',
     siteName: 'PrimeHomes Malawi',
     title: 'PrimeHomes Malawi | Powered by Rasta Kadema',
     description:
