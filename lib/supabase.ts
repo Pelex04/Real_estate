@@ -9,6 +9,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+export function createServerClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
+// Types mirror the actual database schema exactly — no extra columns
 export interface Property {
   id: string;
   title: string;
@@ -48,3 +56,11 @@ export type ContactInquiry = {
   status: 'new' | 'contacted' | 'closed';
   created_at: string;
 };
+
+export function formatPrice(price: number) {
+  return new Intl.NumberFormat('en-MW', {
+    style: 'currency',
+    currency: 'MWK',
+    minimumFractionDigits: 0,
+  }).format(price);
+}

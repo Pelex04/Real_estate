@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /_next/
 
 Sitemap: https://primehomesmalawi.vercel.app/sitemap.xml
-
-https://primehomesmalawi.vercel.app/sitemap.xml
+Host: https://primehomesmalawi.vercel.app
