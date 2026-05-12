@@ -1,7 +1,7 @@
 'use client';
 
 import { Building2, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface NavbarProps {
   onAdminClick: () => void;
@@ -12,10 +12,17 @@ export default function Navbar({ onAdminClick }: NavbarProps) {
 
   const handleLinkClick = () => setIsMenuOpen(false);
 
-  const handleAdminClick = () => {
-    setIsMenuOpen(false);
-    onAdminClick();
-  };
+  // Secret shortcut: Ctrl + Shift + A opens admin panel — hidden from public
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        onAdminClick();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onAdminClick]);
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
@@ -32,12 +39,7 @@ export default function Navbar({ onAdminClick }: NavbarProps) {
             <a href="#properties" className="text-gray-700 hover:text-emerald-600 transition">Properties</a>
             <a href="#about" className="text-gray-700 hover:text-emerald-600 transition">About</a>
             <a href="#contact" className="text-gray-700 hover:text-emerald-600 transition">Contact</a>
-            <button
-              onClick={onAdminClick}
-              className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition"
-            >
-              Admin
-            </button>
+            {/* Admin button intentionally hidden — use Ctrl+Shift+A to access */}
           </div>
 
           <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -51,12 +53,7 @@ export default function Navbar({ onAdminClick }: NavbarProps) {
             <a href="#properties" className="block text-gray-700 hover:text-emerald-600 transition py-2" onClick={handleLinkClick}>Properties</a>
             <a href="#about" className="block text-gray-700 hover:text-emerald-600 transition py-2" onClick={handleLinkClick}>About</a>
             <a href="#contact" className="block text-gray-700 hover:text-emerald-600 transition py-2" onClick={handleLinkClick}>Contact</a>
-            <button
-              onClick={handleAdminClick}
-              className="w-full text-left bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition"
-            >
-              Admin
-            </button>
+            {/* Admin button intentionally hidden — use Ctrl+Shift+A to access */}
           </div>
         )}
       </div>
