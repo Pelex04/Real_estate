@@ -12,7 +12,9 @@ import AdminLogin from '../components/Admin/AdminLogin';
 import AdminDashboard from '../components/Admin/AdminDashboard';
 import ContactForm from '../components/ContactForm';
 import Footer from '../components/Footer';
-import { Building2, Mail, Phone, MapPin } from 'lucide-react';
+import { Building2, Mail, Phone, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const PAGE_SIZE = 9;
 
 export default function HomePage() {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -23,39 +25,30 @@ export default function HomePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showContactForm, setShowContactForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
 
   const [filters, setFilters] = useState<FilterState>({
-    type: 'all',
-    category: 'all',
-    city: '',
-    minPrice: '',
-    maxPrice: '',
+    type: 'all', category: 'all', city: '', minPrice: '', maxPrice: '',
   });
 
-  const checkAdminSession = useCallback(() => {
-    const session = localStorage.getItem('admin_session');
-    if (!session) return;
+  // ── Auth check ──────────────────────────────────────────────────────────────
+  const checkAuth = useCallback(() => {
     try {
-      const parsed = JSON.parse(session);
-      const loginTime = new Date(parsed.loginTime);
-      const now = new Date();
-      const hoursDiff = (now.getTime() - loginTime.getTime()) / (1000 * 60 * 60);
-      if (hoursDiff < 24) {
-        setTimeout(() => setIsAuthenticated(true), 0);
-      } else {
-        localStorage.removeItem('admin_session');
-        setIsAuthenticated(false);
-      }
+      const raw = localStorage.getItem('admin_session');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const hours = (Date.now() - new Date(parsed.loginTime).getTime()) / 3_600_000;
+      if (hours < 24) setIsAuthenticated(true);
+      else localStorage.removeItem('admin_session');
     } catch {
       localStorage.removeItem('admin_session');
-      setIsAuthenticated(false);
     }
   }, []);
 
   const loadProperties = useCallback(async () => {
     setLoading(true);
     try {
-      const [propertiesResult, imagesResult] = await Promise.all([
+      const [propsRes, imgsRes] = await Promise.all([
         supabase
           .from('properties')
           .select('*')
@@ -64,22 +57,24 @@ export default function HomePage() {
           .order('created_at', { ascending: false }),
         supabase.from('property_images').select('*'),
       ]);
-      if (propertiesResult.data) setProperties(propertiesResult.data);
-      if (imagesResult.data) setImages(imagesResult.data);
-    } catch (error) {
-      console.error('Error loading properties:', error);
+      if (propsRes.data) setProperties(propsRes.data);
+      if (imgsRes.data) setImages(imgsRes.data);
+    } catch (err) {
+      console.error('Error loading properties:', err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    checkAdminSession();
+    checkAuth();
     loadProperties();
-  }, [checkAdminSession, loadProperties]);
+  }, [checkAuth, loadProperties]);
 
-  const getPropertyImages = (propertyId: string) =>
-    images.filter((img) => img.property_id === propertyId);
+  // Reset to page 1 when filters/search change
+  useEffect(() => { setPage(1); }, [filters, searchQuery]);
+
+  const getPropertyImages = (id: string) => images.filter((img) => img.property_id === id);
 
   const handleLogout = () => {
     localStorage.removeItem('admin_session');
@@ -89,27 +84,31 @@ export default function HomePage() {
 
   const cities = [...new Set(properties.map((p) => p.city))].sort();
 
-  const filteredProperties = properties.filter((property) => {
-    if (filters.type !== 'all' && property.type !== filters.type) return false;
-    if (filters.category !== 'all' && property.category !== filters.category) return false;
-    if (filters.city && property.city !== filters.city) return false;
-    if (filters.minPrice && property.price < parseFloat(filters.minPrice)) return false;
-    if (filters.maxPrice && property.price > parseFloat(filters.maxPrice)) return false;
+  const filteredProperties = properties.filter((p) => {
+    if (filters.type !== 'all' && p.type !== filters.type) return false;
+    if (filters.category !== 'all' && p.category !== filters.category) return false;
+    if (filters.city && p.city !== filters.city) return false;
+    if (filters.minPrice && p.price < parseFloat(filters.minPrice)) return false;
+    if (filters.maxPrice && p.price > parseFloat(filters.maxPrice)) return false;
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const q = searchQuery.toLowerCase();
       return (
-        property.title.toLowerCase().includes(query) ||
-        property.description.toLowerCase().includes(query) ||
-        property.location.toLowerCase().includes(query) ||
-        property.city.toLowerCase().includes(query) ||
-        property.category.toLowerCase().includes(query)
+        p.title.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.location.toLowerCase().includes(q) ||
+        p.city.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
       );
     }
     return true;
   });
 
-  const featuredProperties = filteredProperties.filter((p) => p.featured).slice(0, 3);
-  const regularProperties = filteredProperties.filter((p) => !p.featured);
+  const featured = filteredProperties.filter((p) => p.featured);
+  const regular = filteredProperties.filter((p) => !p.featured);
+
+  // Pagination on regular listings only
+  const totalPages = Math.max(1, Math.ceil(regular.length / PAGE_SIZE));
+  const paginatedRegular = regular.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -121,57 +120,85 @@ export default function HomePage() {
           <PropertyFilters filters={filters} onFilterChange={setFilters} cities={cities} />
 
           {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-              <p className="mt-4 text-gray-600">Loading properties...</p>
+            <div className="text-center py-16">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600" />
+              <p className="mt-4 text-gray-500">Loading properties...</p>
             </div>
           ) : filteredProperties.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow-md">
-              <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No properties found matching your criteria</p>
+            <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100">
+              <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg font-medium">No properties match your search</p>
               <button
-                onClick={() => {
-                  setFilters({ type: 'all', category: 'all', city: '', minPrice: '', maxPrice: '' });
-                  setSearchQuery('');
-                }}
-                className="mt-4 text-emerald-600 hover:text-emerald-700 font-medium"
+                onClick={() => { setFilters({ type: 'all', category: 'all', city: '', minPrice: '', maxPrice: '' }); setSearchQuery(''); }}
+                className="mt-4 text-emerald-600 hover:text-emerald-700 font-medium text-sm"
               >
-                Clear filters
+                Clear all filters
               </button>
             </div>
           ) : (
             <>
-              {featuredProperties.length > 0 && (
+              {/* Featured */}
+              {featured.length > 0 && (
                 <div className="mb-12">
                   <h2 className="text-3xl font-bold text-gray-900 mb-6">Featured Properties</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {featuredProperties.map((property) => (
-                      <PropertyCard
-                        key={property.id}
-                        property={property}
-                        images={getPropertyImages(property.id)}
-                        onClick={() => setSelectedProperty(property)}
-                      />
+                    {featured.map((p) => (
+                      <PropertyCard key={p.id} property={p} images={getPropertyImages(p.id)} onClick={() => setSelectedProperty(p)} />
                     ))}
                   </div>
                 </div>
               )}
 
-              {regularProperties.length > 0 && (
+              {/* All / paginated */}
+              {regular.length > 0 && (
                 <div>
-                  <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                    {featuredProperties.length > 0 ? 'All Properties' : 'Available Properties'}
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {regularProperties.map((property) => (
-                      <PropertyCard
-                        key={property.id}
-                        property={property}
-                        images={getPropertyImages(property.id)}
-                        onClick={() => setSelectedProperty(property)}
-                      />
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-3xl font-bold text-gray-900">
+                      {featured.length > 0 ? 'All Properties' : 'Available Properties'}
+                    </h2>
+                    <span className="text-sm text-gray-500">{regular.length} listing{regular.length !== 1 ? 's' : ''}</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    {paginatedRegular.map((p) => (
+                      <PropertyCard key={p.id} property={p} images={getPropertyImages(p.id)} onClick={() => setSelectedProperty(p)} />
                     ))}
                   </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                      >
+                        <ChevronLeft className="w-4 h-4" /> Prev
+                      </button>
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                        <button
+                          key={n}
+                          onClick={() => setPage(n)}
+                          className={`w-10 h-10 rounded-lg text-sm font-semibold transition ${
+                            n === page
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+
+                      <button
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                      >
+                        Next <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -185,14 +212,12 @@ export default function HomePage() {
               <div>
                 <h2 className="text-3xl font-bold mb-6">About PrimeHomes Malawi</h2>
                 <p className="text-gray-300 mb-4 leading-relaxed">
-                  PrimeHomes Malawi is your trusted partner in finding the perfect property in
-                  Malawi. Whether you&apos;re looking to buy your dream home or find the ideal
-                  rental property, we&apos;re here to help you every step of the way.
+                  PrimeHomes Malawi is your trusted partner in finding the perfect property. Whether
+                  you&apos;re buying your dream home or finding a rental, we&apos;re here every step of the way.
                 </p>
                 <p className="text-gray-300 leading-relaxed">
-                  With years of experience in the Malawian real estate market, we offer a carefully
-                  curated selection of properties across major cities, ensuring quality and value
-                  for our clients.
+                  With deep roots in the Malawian real estate market, we curate quality properties
+                  across major cities, ensuring value for every client.
                 </p>
               </div>
 
@@ -201,23 +226,32 @@ export default function HomePage() {
                 <div className="space-y-4 mb-6">
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5 text-emerald-400" />
-                    <span>+265 888 414 728</span>
+                    <a href="tel:+265888414728" className="hover:text-emerald-400 transition">+265 888 414 728</a>
                   </div>
                   <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-emerald-400" />
-                    <span>info@primehomes.mw</span>
+                    <a href="mailto:info@primehomes.mw" className="hover:text-emerald-400 transition">info@primehomes.mw</a>
                   </div>
                   <div className="flex items-center gap-3">
                     <MapPin className="w-5 h-5 text-emerald-400" />
                     <span>Lilongwe, Malawi</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => setShowContactForm(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg transition"
-                >
-                  Send us a message
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowContactForm(true)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl transition font-medium"
+                  >
+                    Send a Message
+                  </button>
+                  <a
+                    href="https://wa.me/265888414728?text=Hello%2C%20I%27m%20interested%20in%20a%20property%20on%20PrimeHomes%20Malawi"
+                    target="_blank" rel="noopener noreferrer"
+                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl transition font-medium"
+                  >
+                    WhatsApp
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -236,16 +270,9 @@ export default function HomePage() {
       )}
 
       {showAdmin && (
-        <>
-          {!isAuthenticated ? (
-            <AdminLogin
-              onLoginSuccess={() => setIsAuthenticated(true)}
-              onClose={() => setShowAdmin(false)}
-            />
-          ) : (
-            <AdminDashboard onClose={handleLogout} />
-          )}
-        </>
+        !isAuthenticated
+          ? <AdminLogin onLoginSuccess={() => setIsAuthenticated(true)} onClose={() => setShowAdmin(false)} />
+          : <AdminDashboard onClose={handleLogout} />
       )}
 
       {showContactForm && <ContactForm onClose={() => setShowContactForm(false)} />}
